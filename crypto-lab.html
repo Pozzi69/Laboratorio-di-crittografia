@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laboratorio di Crittografia</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap');
+
+  :root {
+    --bg: #0a0b0f;
+    --surface: #111318;
+    --surface2: #181c24;
+    --border: #2a2f3d;
+    --text: #c8cdd8;
+    --text-dim: #5a6070;
+    --mono: 'Share Tech Mono', monospace;
+    --display: 'Orbitron', monospace;
+    --body: 'Rajdhani', sans-serif;
+
+    /* Tab colors */
+    --atbash:   #e05c5c;
+    --polybius: #e09c3a;
+    --caesar:   #4db86a;
+    --vigenere: #4a9edd;
+    --rsa:      #9b6fe0;
+    --scytale:  #e0a050;
+    --ai:       #00e5cc;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--body);
+    font-size: 16px;
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse at 20% 10%, rgba(74,158,221,0.04) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 90%, rgba(155,111,224,0.04) 0%, transparent 50%);
+  }
+
+  header {
+    padding: 2.5rem 2rem 1.5rem;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(74,158,221,0.06) 0%, transparent 100%);
+    pointer-events: none;
+  }
+  header h1 {
+    font-family: var(--display);
+    font-size: clamp(1.6rem, 5vw, 2.8rem);
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    background: linear-gradient(90deg, #4a9edd, #9b6fe0, #e05c5c);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  header p {
+    margin-top: 0.5rem;
+    color: var(--text-dim);
+    font-size: 0.95rem;
+    letter-spacing: 0.05em;
+  }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--border);
+    padding: 0 1rem;
+    gap: 0.25rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .tab-btn {
+    font-family: var(--display);
+    font-size: 0.65rem;
+    letter-spacing: 0.08em;
+    padding: 0.9rem 1.2rem;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    color: var(--text-dim);
+    white-space: nowrap;
+    transition: color 0.2s, border-color 0.2s;
+    position: relative;
+    top: 1px;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: #fff; }
+  .tab-btn[data-tab="atbash"].active   { border-color: var(--atbash);   color: var(--atbash); }
+  .tab-btn[data-tab="polybius"].active { border-color: var(--polybius); color: var(--polybius); }
+  .tab-btn[data-tab="caesar"].active   { border-color: var(--caesar);   color: var(--caesar); }
+  .tab-btn[data-tab="vigenere"].active { border-color: var(--vigenere); color: var(--vigenere); }
+  .tab-btn[data-tab="rsa"].active      { border-color: var(--rsa);      color: var(--rsa); }
+  .tab-btn[data-tab="scytale"].active  { border-color: var(--scytale);  color: var(--scytale); }
+
+  /* ── PANELS ── */
+  .panel { display: none; padding: 2rem; max-width: 900px; margin: 0 auto; }
+  .panel.active { display: block; }
+
+  .section-tag {
+    font-family: var(--display);
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    padding: 0.2rem 0.6rem;
+    border-radius: 2px;
+    margin-bottom: 0.6rem;
+    display: inline-block;
+  }
+  #panel-atbash   .section-tag { background: rgba(224,92,92,0.15);   color: var(--atbash);   border: 1px solid rgba(224,92,92,0.3); }
+  #panel-polybius .section-tag { background: rgba(224,156,58,0.15);  color: var(--polybius); border: 1px solid rgba(224,156,58,0.3); }
+  #panel-caesar   .section-tag { background: rgba(77,184,106,0.15);  color: var(--caesar);   border: 1px solid rgba(77,184,106,0.3); }
+  #panel-vigenere .section-tag { background: rgba(74,158,221,0.15);  color: var(--vigenere); border: 1px solid rgba(74,158,221,0.3); }
+  #panel-rsa      .section-tag { background: rgba(155,111,224,0.15); color: var(--rsa);      border: 1px solid rgba(155,111,224,0.3); }
+  #panel-scytale  .section-tag { background: rgba(224,160,80,0.15);  color: var(--scytale);  border: 1px solid rgba(224,160,80,0.3); }
+
+  .section-title {
+    font-family: var(--display);
+    font-size: clamp(1.1rem, 3vw, 1.6rem);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.8rem;
+  }
+  .history-box {
+    background: var(--surface);
+    border-left: 3px solid var(--border);
+    padding: 0.9rem 1.1rem;
+    border-radius: 0 6px 6px 0;
+    font-size: 0.92rem;
+    line-height: 1.6;
+    color: var(--text-dim);
+    margin-bottom: 1.8rem;
+  }
+  #panel-atbash   .history-box { border-color: var(--atbash); }
+  #panel-polybius .history-box { border-color: var(--polybius); }
+  #panel-caesar   .history-box { border-color: var(--caesar); }
+  #panel-vigenere .history-box { border-color: var(--vigenere); }
+  #panel-rsa      .history-box { border-color: var(--rsa); }
+  #panel-scytale  .history-box { border-color: var(--scytale); }
+
+  /* ── FORM ELEMENTS ── */
+  label {
+    display: block;
+    font-size: 0.78rem;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    margin-bottom: 0.35rem;
+    text-transform: uppercase;
+    font-family: var(--display);
+  }
+  input[type="text"], input[type="number"], textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 0.95rem;
+    padding: 0.65rem 0.9rem;
+    outline: none;
+    transition: border-color 0.2s;
+    margin-bottom: 1rem;
+  }
+  input:focus, textarea:focus { border-color: #4a9edd; }
+  textarea { min-height: 80px; resize: vertical; }
+
+  input[type="range"] {
+    width: 100%;
+    -webkit-appearance: none;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+    margin: 0.5rem 0 1rem;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--caesar);
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+  input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.3); }
+
+  .row { display: flex; gap: 1rem; flex-wrap: wrap; }
+  .row > * { flex: 1; min-width: 200px; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    font-family: var(--display);
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    padding: 0.65rem 1.4rem;
+    border: 1px solid;
+    border-radius: 3px;
+    cursor: pointer;
+    background: transparent;
+    transition: all 0.18s;
+    margin-right: 0.6rem;
+    margin-bottom: 0.6rem;
+  }
+  .btn:hover { filter: brightness(1.2); transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); }
+
+  .btn-atbash   { color: var(--atbash);   border-color: var(--atbash);   }
+  .btn-atbash:hover   { background: rgba(224,92,92,0.1); }
+  .btn-polybius { color: var(--polybius); border-color: var(--polybius); }
+  .btn-polybius:hover { background: rgba(224,156,58,0.1); }
+  .btn-caesar   { color: var(--caesar);   border-color: var(--caesar);   }
+  .btn-caesar:hover   { background: rgba(77,184,106,0.1); }
+  .btn-vigenere { color: var(--vigenere); border-color: var(--vigenere); }
+  .btn-vigenere:hover { background: rgba(74,158,221,0.1); }
+  .btn-rsa      { color: var(--rsa);      border-color: var(--rsa);      }
+  .btn-rsa:hover      { background: rgba(155,111,224,0.1); }
+  .btn-scytale  { color: var(--scytale); border-color: var(--scytale); }
+  .btn-scytale:hover  { background: rgba(224,160,80,0.1); }
+  .btn-ai       { color: var(--ai);       border-color: var(--ai);       }
+  .btn-ai:hover       { background: rgba(0,229,204,0.08); }
+
+  /* ── OUTPUT ── */
+  .output-label {
+    font-family: var(--display);
+    font-size: 0.62rem;
+    letter-spacing: 0.12em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 0.3rem;
+  }
+  .output-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.8rem 1rem;
+    font-family: var(--mono);
+    font-size: 1rem;
+    min-height: 50px;
+    word-break: break-all;
+    color: #fff;
+    margin-bottom: 1.5rem;
+    letter-spacing: 0.05em;
+  }
+
+  /* ── AI BOX ── */
+  .ai-box {
+    border: 1px solid rgba(0,229,204,0.3);
+    border-radius: 6px;
+    background: rgba(0,229,204,0.03);
+    padding: 1rem 1.2rem;
+    margin-top: 1rem;
+    display: none;
+  }
+  .ai-box.visible { display: block; }
+  .ai-header {
+    font-family: var(--display);
+    font-size: 0.62rem;
+    letter-spacing: 0.14em;
+    color: var(--ai);
+    margin-bottom: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .ai-header .blink {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--ai);
+    animation: blink 1s infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+  .ai-content {
+    font-size: 0.92rem;
+    line-height: 1.7;
+    color: var(--text);
+    white-space: pre-wrap;
+    font-family: var(--body);
+    max-height: 400px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+    padding-right: 0.4rem;
+  }
+
+  /* ── GRID POLIBIO ── */
+  .grid-container {
+    margin: 1rem 0;
+    overflow-x: auto;
+  }
+  .polybius-grid {
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+  }
+  .polybius-grid td, .polybius-grid th {
+    width: 40px; height: 40px;
+    text-align: center;
+    border: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+  .polybius-grid th {
+    background: rgba(224,156,58,0.12);
+    color: var(--polybius);
+    font-weight: 700;
+  }
+  .polybius-grid td { color: var(--text); }
+  .polybius-grid td.highlight { background: rgba(224,156,58,0.25); color: #fff; }
+
+  /* ── TABULA RECTA ── */
+  .tabula-wrapper {
+    overflow-x: auto;
+    margin: 1rem 0;
+    max-height: 320px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+  .tabula {
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+  }
+  .tabula td, .tabula th {
+    width: 26px; height: 24px;
+    text-align: center;
+    border: 1px solid rgba(42,47,61,0.5);
+  }
+  .tabula th { background: rgba(74,158,221,0.12); color: var(--vigenere); font-weight: 700; }
+  .tabula td { color: var(--text-dim); }
+  .tabula td.hl-row { background: rgba(74,158,221,0.08); color: var(--text); }
+  .tabula td.hl-col { background: rgba(74,158,221,0.08); color: var(--text); }
+  .tabula td.hl-cell { background: var(--vigenere); color: #000; font-weight: 700; }
+
+  /* ── RSA STEPS ── */
+  .rsa-steps { margin-top: 1.5rem; }
+  .rsa-step {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--rsa);
+    border-radius: 0 4px 4px 0;
+    padding: 0.7rem 1rem;
+    margin-bottom: 0.6rem;
+    font-family: var(--mono);
+    font-size: 0.88rem;
+    animation: fadeIn 0.3s ease;
+  }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+  .rsa-step .step-label {
+    font-family: var(--display);
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    color: var(--rsa);
+    margin-bottom: 0.3rem;
+  }
+  .rsa-step .step-val { color: #fff; font-size: 1rem; }
+  .rsa-step.error { border-color: var(--atbash); }
+  .rsa-step.error .step-label { color: var(--atbash); }
+  .rsa-step.ok { border-color: var(--caesar); }
+  .rsa-step.ok .step-label { color: var(--caesar); }
+
+  /* slider label */
+  .slider-val {
+    font-family: var(--mono);
+    color: var(--caesar);
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin-left: 0.5rem;
+  }
+
+  /* responsive */
+  @media(max-width:600px) {
+    .panel { padding: 1.2rem; }
+    .btn { padding: 0.55rem 0.9rem; font-size: 0.6rem; }
+  }
+  /* ── SCITALE VISUAL ── */
+  .scytale-visual {
+    margin: 1.5rem 0;
+    position: relative;
+    overflow-x: auto;
+    padding: 1.2rem 0;
+  }
+  .scytale-rod {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    min-width: 100%;
+  }
+  /* il bastone cilindrico dietro le celle */
+  .scytale-rod::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 0; right: 0;
+    transform: translateY(-50%);
+    height: 54px;
+    background: linear-gradient(180deg,
+      rgba(224,160,80,0.18) 0%,
+      rgba(180,110,30,0.35) 40%,
+      rgba(100,55,10,0.5)  70%,
+      rgba(180,110,30,0.25) 100%);
+    border-radius: 8px;
+    border: 1px solid rgba(224,160,80,0.25);
+    box-shadow: 0 2px 18px rgba(224,160,80,0.08);
+  }
+  .scytale-cols {
+    display: flex;
+    gap: 3px;
+    position: relative;
+    z-index: 1;
+    padding: 0 6px;
+    flex-wrap: nowrap;
+  }
+  .scytale-col {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .scytale-cell {
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    border-radius: 3px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+    position: relative;
+  }
+  .scytale-cell.active-read {
+    background: rgba(224,160,80,0.22);
+    border-color: var(--scytale);
+    color: #fff;
+  }
+  .scytale-cell.diagonal-mark {
+    background: rgba(224,160,80,0.08);
+    border-color: rgba(224,160,80,0.35);
+    color: var(--scytale);
+  }
+  /* strip visiva che unisce le celle lette in diagonale */
+  .scytale-label-row {
+    display: flex;
+    gap: 3px;
+    padding: 0 6px;
+    margin-top: 6px;
+  }
+  .scytale-idx {
+    width: 28px;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: rgba(224,160,80,0.45);
+  }
+  .scytale-read-strip {
+    margin-top: 1rem;
+    padding: 0.6rem 1rem;
+    background: rgba(224,160,80,0.06);
+    border: 1px solid rgba(224,160,80,0.2);
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 0.95rem;
+    letter-spacing: 0.15em;
+    color: var(--scytale);
+    word-break: break-all;
+  }
+  .scytale-read-strip span { color: var(--text-dim); font-size: 0.7rem; margin-right: 0.5rem; font-family: var(--display); letter-spacing: 0.1em; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Laboratorio di Crittografia</h1>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button class="tab-btn active" data-tab="atbash"   role="tab">ATBASH</button>
+  <button class="tab-btn"        data-tab="polybius"  role="tab">POLIBIO</button>
+  <button class="tab-btn"        data-tab="caesar"    role="tab">CESARE</button>
+  <button class="tab-btn"        data-tab="vigenere"  role="tab">VIGENÈRE</button>
+  <button class="tab-btn"        data-tab="rsa"       role="tab">RSA</button>
+  <button class="tab-btn"        data-tab="scytale"   role="tab">SCITALE</button>
+</nav>
+
+<!-- ══════════════════════════════════════
+     ATBASH
+════════════════════════════════════════ -->
+<section id="panel-atbash" class="panel active" role="tabpanel">
+  <span class="section-tag">SOSTITUZIONE MONOALFABETICA</span>
+  <h2 class="section-title">Cifrario Atbash</h2>
+  <div class="history-box">
+    Nato nella tradizione ebraica intorno all'VIII secolo a.C., Atbash è uno dei cifrari più antichi conosciuti. Il nome deriva dalle prime e ultime lettere dell'alfabeto ebraico (Aleph↔Taw, Beth↔Shin). La regola è semplicissima: la prima lettera diventa l'ultima e viceversa. Essendo il cifrario simmetrico, la stessa operazione cifra e decifra.
+  </div>
+
+  <label for="atbash-input">MESSAGGIO</label>
+  <input type="text" id="atbash-input" placeholder="Scrivi qui il messaggio..." />
+
+  <button class="btn btn-atbash" onclick="atbashProcess()">⇄ CIFRA / DECIFRA</button>
+  <button class="btn btn-ai" onclick="callAI('atbash')">🤖 L'AI prova a decifrare</button>
+
+  <div class="output-label">RISULTATO</div>
+  <div class="output-box" id="atbash-output">—</div>
+
+  <div class="ai-box" id="ai-atbash">
+    <div class="ai-header"><span class="blink"></span> ANALISI AI IN CORSO</div>
+    <div class="ai-content" id="ai-atbash-content"></div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     POLIBIO
+════════════════════════════════════════ -->
+<section id="panel-polybius" class="panel" role="tabpanel">
+  <span class="section-tag">SOSTITUZIONE BIGRAMMA</span>
+  <h2 class="section-title">Scacchiera di Polibio</h2>
+  <div class="history-box">
+    Inventata dallo storico greco Polibio nel II secolo a.C., questa tecnica trasforma ogni lettera in una coppia di numeri che indicano riga e colonna in una griglia 5×5. Polibio la usava anche con torce per comunicare a distanza (telegrafo ottico). I e J condividono la stessa cella essendo l'alfabeto latino di 25 lettere nella griglia.
+  </div>
+
+  <div class="grid-container">
+    <table class="polybius-grid" id="polybius-table"></table>
+  </div>
+
+  <label for="polybius-input">MESSAGGIO</label>
+  <input type="text" id="polybius-input" placeholder="Testo da cifrare o coppie di numeri (es. 11 21 32)..." />
+
+  <button class="btn btn-polybius" onclick="polybiusEncode()">▶ CIFRA</button>
+  <button class="btn btn-polybius" onclick="polybiusDecode()">◀ DECIFRA</button>
+  <button class="btn btn-ai" onclick="callAI('polybius')">🤖 L'AI prova a decifrare</button>
+
+  <div class="output-label">RISULTATO</div>
+  <div class="output-box" id="polybius-output">—</div>
+
+  <div class="ai-box" id="ai-polybius">
+    <div class="ai-header"><span class="blink"></span> ANALISI AI IN CORSO</div>
+    <div class="ai-content" id="ai-polybius-content"></div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     CESARE
+════════════════════════════════════════ -->
+<section id="panel-caesar" class="panel" role="tabpanel">
+  <span class="section-tag">SOSTITUZIONE CON SHIFT</span>
+  <h2 class="section-title">Cifrario di Cesare</h2>
+  <div class="history-box">
+    Giulio Cesare usava questo cifrario per le comunicazioni militari nel I secolo a.C. (Svetonio, <em>De Vita Caesarum</em>). Ogni lettera viene spostata di N posizioni nell'alfabeto. Con shift 3: A→D, B→E, ecc. È il capostipite di tutti i cifrari a sostituzione e la base del ROT13 (shift=13).
+  </div>
+
+  <label>SHIFT: <span class="slider-val" id="caesar-shift-val">3</span></label>
+  <input type="range" id="caesar-shift" min="1" max="25" value="3"
+         oninput="document.getElementById('caesar-shift-val').textContent=this.value" />
+
+  <label for="caesar-input">MESSAGGIO</label>
+  <input type="text" id="caesar-input" placeholder="Scrivi qui il messaggio..." />
+
+  <button class="btn btn-caesar" onclick="caesarProcess(true)">▶ CIFRA</button>
+  <button class="btn btn-caesar" onclick="caesarProcess(false)">◀ DECIFRA</button>
+  <button class="btn btn-ai" onclick="callAI('caesar')">🤖 L'AI prova a decifrare</button>
+
+  <div class="output-label">RISULTATO</div>
+  <div class="output-box" id="caesar-output">—</div>
+
+  <div class="ai-box" id="ai-caesar">
+    <div class="ai-header"><span class="blink"></span> ANALISI AI IN CORSO</div>
+    <div class="ai-content" id="ai-caesar-content"></div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     VIGENÈRE
+════════════════════════════════════════ -->
+<section id="panel-vigenere" class="panel" role="tabpanel">
+  <span class="section-tag">SOSTITUZIONE POLIALFABETICA</span>
+  <h2 class="section-title">Cifrario di Vigenère</h2>
+  <div class="history-box">
+    Blaise de Vigenère lo descrisse nel 1586, ma la paternità è contesa. Per due secoli fu chiamato <em>"le chiffre indéchiffrable"</em>. Usa una parola-chiave (il "verme") ripetuta sopra il messaggio: ogni lettera della chiave indica quale alfabeto usare nella Tabula Recta. Charles Babbage lo violò nel 1854 con l'analisi dell'indice di coincidenza.
+  </div>
+
+  <div class="row">
+    <div>
+      <label for="vigenere-key">CHIAVE (VERME)</label>
+      <input type="text" id="vigenere-key" placeholder="es. CHIAVE" />
+    </div>
+    <div>
+      <label for="vigenere-input">MESSAGGIO</label>
+      <input type="text" id="vigenere-input" placeholder="Scrivi qui il messaggio..." />
+    </div>
+  </div>
+
+  <button class="btn btn-vigenere" onclick="vigenereProcess(true)">▶ CIFRA</button>
+  <button class="btn btn-vigenere" onclick="vigenereProcess(false)">◀ DECIFRA</button>
+  <button class="btn btn-ai" onclick="callAI('vigenere')">🤖 L'AI prova a decifrare</button>
+
+  <div class="output-label">RISULTATO</div>
+  <div class="output-box" id="vigenere-output">—</div>
+
+  <details style="margin:1rem 0">
+    <summary style="cursor:pointer;color:var(--vigenere);font-family:var(--display);font-size:0.7rem;letter-spacing:0.1em">▶ MOSTRA TABULA RECTA</summary>
+    <div class="grid-container tabula-wrapper" id="tabula-container" style="margin-top:0.5rem"></div>
+  </details>
+
+  <div class="ai-box" id="ai-vigenere">
+    <div class="ai-header"><span class="blink"></span> ANALISI AI IN CORSO</div>
+    <div class="ai-content" id="ai-vigenere-content"></div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     RSA
+════════════════════════════════════════ -->
+<section id="panel-rsa" class="panel" role="tabpanel">
+  <span class="section-tag">CRITTOGRAFIA ASIMMETRICA</span>
+  <h2 class="section-title">RSA</h2>
+  <div class="history-box">
+    Inventato nel 1977 da Rivest, Shamir e Adleman al MIT. RSA è basato sulla difficoltà computazionale di fattorizzare il prodotto di due grandi numeri primi. A differenza dei cifrari precedenti, usa due chiavi: una pubblica per cifrare e una privata per decifrare. È ancora oggi il fondamento di HTTPS, email cifrate e firme digitali.
+  </div>
+
+  <div class="row">
+    <div>
+      <label for="rsa-p">p — PRIMO 1</label>
+      <input type="number" id="rsa-p" value="5" min="2" />
+    </div>
+    <div>
+      <label for="rsa-q">q — PRIMO 2</label>
+      <input type="number" id="rsa-q" value="11" min="2" />
+    </div>
+    <div>
+      <label for="rsa-e">e — ESPONENTE PUBBLICO</label>
+      <input type="number" id="rsa-e" value="3" min="2" />
+    </div>
+    <div>
+      <label for="rsa-m">M — MESSAGGIO (numero)</label>
+      <input type="number" id="rsa-m" value="2" min="0" />
+    </div>
+  </div>
+
+  <button class="btn btn-rsa" onclick="rsaCompute()">⚙ CALCOLA TUTTO</button>
+  <button class="btn btn-ai" onclick="callAI('rsa')">🤖 L'AI prova a decifrare</button>
+
+  <div class="rsa-steps" id="rsa-steps"></div>
+
+  <div class="ai-box" id="ai-rsa">
+    <div class="ai-header"><span class="blink"></span> ANALISI AI IN CORSO</div>
+    <div class="ai-content" id="ai-rsa-content"></div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     SCITALE
+════════════════════════════════════════ -->
+<section id="panel-scytale" class="panel" role="tabpanel">
+  <span class="section-tag">TRASPOSIZIONE GEOMETRICA</span>
+  <h2 class="section-title">Scitale Spartana</h2>
+  <div class="history-box">
+    La scitale (σκυτάλη) era usata dagli Spartani dal V secolo a.C. per comunicare tra generali in campo. Si avvolgeva una striscia di cuoio intorno a un bastone di diametro preciso e si scriveva il messaggio lungo la lunghezza. Srotolata, la striscia mostrava solo lettere sparse: per decifrare serviva un bastone identico. È il primo cifrario a <em>trasposizione</em>: le lettere non cambiano, cambia solo la loro posizione.
+  </div>
+
+  <div class="row">
+    <div>
+      <label for="scytale-cols-input">COLONNE (diametro del bastone)</label>
+      <input type="number" id="scytale-cols-input" value="4" min="2" max="20"
+             oninput="scytaleUpdate()" />
+    </div>
+    <div>
+      <label for="scytale-input">MESSAGGIO</label>
+      <input type="text" id="scytale-input" placeholder="Scrivi il messaggio..."
+             oninput="scytaleUpdate()" />
+    </div>
+  </div>
+
+  <button class="btn btn-scytale" onclick="scytaleEncode()">▶ CIFRA</button>
+  <button class="btn btn-scytale" onclick="scytaleDecode()">◀ DECIFRA</button>
+  <button class="btn btn-ai" onclick="callAI('scytale')">🤖 L'AI prova a decifrare</button>
+
+  <!-- Visualizzazione grafica del bastone -->
+  <div id="scytale-visual-wrap" style="margin-top:1rem"></div>
+
+  <div class="output-label" style="margin-top:1rem">RISULTATO</div>
+  <div class="output-box" id="scytale-output">—</div>
+
+  <div class="ai-box" id="ai-scytale">
+    <div class="ai-header"><span class="blink"></span> ANALISI AI IN CORSO</div>
+    <div class="ai-content" id="ai-scytale-content"></div>
+  </div>
+</section>
+
+<script>
+/* ════════════════════════════════
+   SCITALE
+   Cifratura per trasposizione:
+   scrivo il messaggio riga per riga
+   in una griglia di C colonne,
+   poi lo rileggo colonna per colonna.
+   Decifrare = operazione inversa:
+   scrivo per colonne, leggo per righe.
+════════════════════════════════ */
+function scytalePad(txt, cols) {
+  // Rimuovo spazi e porto in maiuscolo
+  const clean = txt.toUpperCase().replace(/[^A-Z]/g, '');
+  const rows = Math.ceil(clean.length / cols);
+  // Padding con X per riempire l'ultima riga
+  return clean.padEnd(rows * cols, 'X');
+}
+
+function scytaleEncode() {
+  const msg = document.getElementById('scytale-input').value;
+  const cols = parseInt(document.getElementById('scytale-cols-input').value);
+  if (cols < 2 || !msg.trim()) { document.getElementById('scytale-output').textContent = 'Inserisci messaggio e colonne.'; return; }
+  const padded = scytalePad(msg, cols);
+  const rows = padded.length / cols;
+  // Leggo per colonne
+  let result = '';
+  for (let c = 0; c < cols; c++)
+    for (let r = 0; r < rows; r++)
+      result += padded[r * cols + c];
+  document.getElementById('scytale-output').textContent = result;
+  scytaleDrawGrid(padded, cols, rows, 'encode');
+}
+
+function scytaleDecode() {
+  const msg = document.getElementById('scytale-input').value.toUpperCase().replace(/[^A-Z]/g, '');
+  const cols = parseInt(document.getElementById('scytale-cols-input').value);
+  if (cols < 2 || !msg.trim()) { document.getElementById('scytale-output').textContent = 'Inserisci messaggio e colonne.'; return; }
+  const rows = Math.ceil(msg.length / cols);
+  const padded = msg.padEnd(rows * cols, 'X');
+  // Per decifrare: il testo cifrato era scritto per colonne,
+  // quindi lo scrivo in una griglia per colonne e rileggo per righe
+  const grid = Array.from({length: rows}, () => Array(cols).fill(''));
+  let idx = 0;
+  for (let c = 0; c < cols; c++)
+    for (let r = 0; r < rows; r++)
+      grid[r][c] = padded[idx++] || 'X';
+  let result = '';
+  for (let r = 0; r < rows; r++)
+    for (let c = 0; c < cols; c++)
+      result += grid[r][c];
+  document.getElementById('scytale-output').textContent = result.replace(/X+$/, '');
+  // Disegno la griglia in modalità decode (leggo per righe)
+  const flat = grid.flat().join('');
+  scytaleDrawGrid(flat, cols, rows, 'decode');
+}
+
+function scytaleUpdate() {
+  // Ricalcola live mentre si digita (solo anteprima griglia, senza output)
+  const msg = document.getElementById('scytale-input').value;
+  const cols = parseInt(document.getElementById('scytale-cols-input').value) || 4;
+  if (!msg.trim()) { document.getElementById('scytale-visual-wrap').innerHTML = ''; return; }
+  const padded = scytalePad(msg, cols);
+  const rows = padded.length / cols;
+  scytaleDrawGrid(padded, cols, rows, 'preview');
+}
+
+function scytaleDrawGrid(padded, cols, rows, mode) {
+  const wrap = document.getElementById('scytale-visual-wrap');
+
+  // Costruisco la griglia come matrice rows x cols
+  const grid = [];
+  for (let r = 0; r < rows; r++) {
+    grid.push([]);
+    for (let c = 0; c < cols; c++)
+      grid[r].push(padded[r * cols + c] || '');
+  }
+
+  // Costruisco le colonne da visualizzare sul bastone
+  // Sul bastone la lettura avviene colonna per colonna (encode)
+  // quindi evidenzio le celle della prima colonna letta
+  let html = `<div class="scytale-visual">
+    <div style="font-family:var(--display);font-size:0.6rem;letter-spacing:0.12em;color:var(--scytale);margin-bottom:0.6rem;">
+      ◉ BASTONE — ${cols} COLONNE × ${rows} RIGHE
+    </div>
+    <div class="scytale-rod">
+      <div class="scytale-cols" id="scytale-cols-cells">`;
+
+  for (let c = 0; c < cols; c++) {
+    html += `<div class="scytale-col">`;
+    for (let r = 0; r < rows; r++) {
+      // In encode: evidenzio la prima colonna come esempio di lettura
+      const highlight = (mode === 'encode' && c === 0) ? ' active-read' :
+                        (mode === 'decode' && r === 0) ? ' active-read' :
+                        (mode === 'preview') ? ' diagonal-mark' : '';
+      html += `<div class="scytale-cell${highlight}">${grid[r][c]}</div>`;
+    }
+    html += `</div>`;
+  }
+
+  html += `</div></div>`; // chiude scytale-cols e scytale-rod
+
+  // Indici colonne
+  html += `<div class="scytale-label-row">`;
+  for (let c = 0; c < cols; c++)
+    html += `<div class="scytale-idx">${c+1}</div>`;
+  html += `</div>`;
+
+  // Strip della lettura per colonne (solo in encode)
+  if (mode === 'encode') {
+    let colRead = '';
+    for (let r = 0; r < rows; r++) colRead += grid[r][0];
+    html += `<div class="scytale-read-strip"><span>COL 1 →</span>${colRead}…</div>`;
+  }
+  if (mode === 'decode') {
+    let rowRead = '';
+    for (let c = 0; c < cols; c++) rowRead += grid[0][c];
+    html += `<div class="scytale-read-strip"><span>RIGA 1 →</span>${rowRead}…</div>`;
+  }
+
+  html += `</div>`; // chiude scytale-visual
+  wrap.innerHTML = html;
+}
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+/* ════════════════════════════════
+   ATBASH
+   Ogni lettera dell'alfabeto viene
+   mappata al suo "specchio": A↔Z,
+   B↔Y... Il codice ASCII di A è 65,
+   quindi Z = 65+25. La formula
+   riflette: newCode = 65 + (25 - (code-65))
+════════════════════════════════ */
+function atbashChar(c) {
+  if (c >= 'A' && c <= 'Z') return String.fromCharCode(65 + 25 - (c.charCodeAt(0) - 65));
+  if (c >= 'a' && c <= 'z') return String.fromCharCode(97 + 25 - (c.charCodeAt(0) - 97));
+  return c;
+}
+function atbashProcess() {
+  const txt = document.getElementById('atbash-input').value;
+  document.getElementById('atbash-output').textContent = txt.split('').map(atbashChar).join('') || '—';
+}
+
+/* ════════════════════════════════
+   POLIBIO
+   La griglia 5x5 contiene le 25 lettere
+   (I e J insieme). Per cifrare, trovo la
+   posizione di ogni lettera e restituisco
+   "riga colonna" (1-based).
+   Per decifrare, prendo coppie di numeri
+   e le converto in posizione nella griglia.
+════════════════════════════════ */
+const POLY_ALPHABET = 'ABCDEFGHIKLMNOPQRSTUVWXYZ'; // 25 lettere, no J
+const POLY_GRID = [];
+for (let i = 0; i < 5; i++) POLY_GRID.push(POLY_ALPHABET.slice(i*5, i*5+5).split(''));
+
+function buildPolybiusTable() {
+  const t = document.getElementById('polybius-table');
+  let html = '<tr><th></th>';
+  for (let c=1;c<=5;c++) html += `<th>${c}</th>`;
+  html += '</tr>';
+  for (let r=0;r<5;r++) {
+    html += `<tr><th>${r+1}</th>`;
+    for (let c=0;c<5;c++) html += `<td>${POLY_GRID[r][c]}</td>`;
+    html += '</tr>';
+  }
+  t.innerHTML = html;
+}
+
+function polybiusEncode() {
+  const txt = document.getElementById('polybius-input').value.toUpperCase().replace(/J/g,'I');
+  const pairs = [];
+  for (const ch of txt) {
+    if (ch === ' ') { pairs.push('  '); continue; }
+    let found = false;
+    for (let r=0;r<5;r++) for (let c=0;c<5;c++) {
+      if (POLY_GRID[r][c] === ch) { pairs.push(`${r+1}${c+1}`); found=true; break; }
+      if (found) break;
+    }
+    if (!found && ch.match(/[A-Z]/)) pairs.push('??');
+  }
+  document.getElementById('polybius-output').textContent = pairs.join(' ') || '—';
+}
+
+function polybiusDecode() {
+  const txt = document.getElementById('polybius-input').value.trim();
+  const tokens = txt.split(/\s+/);
+  const letters = tokens.map(t => {
+    if (t.length === 2 && /^\d\d$/.test(t)) {
+      const r = parseInt(t[0])-1, c = parseInt(t[1])-1;
+      if (r>=0&&r<5&&c>=0&&c<5) return POLY_GRID[r][c];
+    }
+    return '?';
+  });
+  document.getElementById('polybius-output').textContent = letters.join('') || '—';
+}
+
+buildPolybiusTable();
+
+/* ════════════════════════════════
+   CESARE
+   Shift circolare: per cifrare aggiungo
+   N, per decifrare sottraggo N. Il
+   modulo 26 garantisce che lo shift
+   avvenga in modo circolare (dopo Z
+   si torna ad A).
+════════════════════════════════ */
+function caesarShift(c, n) {
+  const base = c >= 'a' ? 97 : 65;
+  return String.fromCharCode(((c.charCodeAt(0) - base + n + 26) % 26) + base);
+}
+function caesarProcess(encode) {
+  const n = parseInt(document.getElementById('caesar-shift').value) * (encode ? 1 : -1);
+  const txt = document.getElementById('caesar-input').value;
+  const res = txt.split('').map(c => c.match(/[a-zA-Z]/) ? caesarShift(c, n) : c).join('');
+  document.getElementById('caesar-output').textContent = res || '—';
+}
+
+/* ════════════════════════════════
+   VIGENÈRE
+   Per ogni lettera del messaggio uso
+   la lettera corrispondente della chiave
+   (ripetuta ciclicamente) come "shift".
+   Cifrare: (m + k) mod 26
+   Decifrare: (m - k + 26) mod 26
+════════════════════════════════ */
+function vigenereProcess(encode) {
+  const key = document.getElementById('vigenere-key').value.toUpperCase().replace(/[^A-Z]/g,'');
+  const msg = document.getElementById('vigenere-input').value;
+  if (!key) { document.getElementById('vigenere-output').textContent = 'Inserisci una chiave!'; return; }
+  let ki = 0;
+  const res = msg.split('').map(c => {
+    if (!c.match(/[a-zA-Z]/)) return c;
+    const base = c >= 'a' ? 97 : 65;
+    const shift = key[ki % key.length].charCodeAt(0) - 65;
+    ki++;
+    const n = encode ? shift : (26 - shift);
+    return String.fromCharCode(((c.charCodeAt(0) - base + n) % 26) + base);
+  }).join('');
+  document.getElementById('vigenere-output').textContent = res || '—';
+}
+
+/* Tabula Recta: matrice 26x26 dove
+   la riga r, colonna c contiene la
+   lettera (r+c) mod 26 — cioè ogni
+   riga è un alfabeto shiftato */
+function buildTabula() {
+  const az = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  let html = '<table class="tabula"><tr><th></th>';
+  for (const ch of az) html += `<th>${ch}</th>`;
+  html += '</tr>';
+  for (let r=0;r<26;r++) {
+    html += `<tr><th>${az[r]}</th>`;
+    for (let c=0;c<26;c++) {
+      html += `<td>${az[(r+c)%26]}</td>`;
+    }
+    html += '</tr>';
+  }
+  html += '</table>';
+  document.getElementById('tabula-container').innerHTML = html;
+}
+buildTabula();
+
+/* ════════════════════════════════
+   RSA
+   Usiamo BigInt nativo di JS per
+   gestire i calcoli modulari con
+   numeri grandi senza perdere
+   precisione.
+════════════════════════════════ */
+function gcd(a,b) { return b===0n?a:gcd(b,a%b); }
+
+/* Algoritmo di Euclide esteso:
+   trova x tale che a*x ≡ 1 (mod m)
+   Restituisce l'inverso modulare di a */
+function modInverse(a, m) {
+  let [old_r, r] = [a, m];
+  let [old_s, s] = [1n, 0n];
+  while (r !== 0n) {
+    const q = old_r / r;
+    [old_r, r] = [r, old_r - q*r];
+    [old_s, s] = [s, old_s - q*s];
+  }
+  return ((old_s % m) + m) % m;
+}
+
+/* Esponenziazione modulare veloce:
+   calcola base^exp mod mod in O(log exp)
+   invece di O(exp), essenziale per RSA */
+function modPow(base, exp, mod) {
+  let result = 1n;
+  base = base % mod;
+  while (exp > 0n) {
+    if (exp % 2n === 1n) result = result * base % mod;
+    exp = exp / 2n;
+    base = base * base % mod;
+  }
+  return result;
+}
+
+function isPrime(n) {
+  if (n < 2n) return false;
+  if (n === 2n) return true;
+  if (n % 2n === 0n) return false;
+  for (let i=3n; i*i<=n; i+=2n) if (n%i===0n) return false;
+  return true;
+}
+
+function rsaAddStep(label, val, type='') {
+  const d = document.createElement('div');
+  d.className = 'rsa-step ' + type;
+  d.innerHTML = `<div class="step-label">${label}</div><div class="step-val">${val}</div>`;
+  document.getElementById('rsa-steps').appendChild(d);
+}
+
+function rsaCompute() {
+  const stepsEl = document.getElementById('rsa-steps');
+  stepsEl.innerHTML = '';
+
+  const p = BigInt(document.getElementById('rsa-p').value);
+  const q = BigInt(document.getElementById('rsa-q').value);
+  const e = BigInt(document.getElementById('rsa-e').value);
+  const M = BigInt(document.getElementById('rsa-m').value);
+
+  // Verifica che p e q siano primi
+  if (!isPrime(p)) { rsaAddStep('ERRORE', `p = ${p} non è primo`, 'error'); return; }
+  if (!isPrime(q)) { rsaAddStep('ERRORE', `q = ${q} non è primo`, 'error'); return; }
+  rsaAddStep('p primo?', `${p} → ✓ primo`, 'ok');
+  rsaAddStep('q primo?', `${q} → ✓ primo`, 'ok');
+
+  const n = p * q;
+  rsaAddStep('n = p × q', `${p} × ${q} = ${n}`);
+
+  const phi = (p-1n)*(q-1n);
+  rsaAddStep('φ(n) = (p−1)(q−1)', `(${p}-1)(${q}-1) = ${p-1n} × ${q-1n} = ${phi}`);
+
+  // Verifica che e sia coprimo con phi e < phi
+  if (e >= phi) { rsaAddStep('ERRORE', `e = ${e} deve essere < φ(n) = ${phi}`, 'error'); return; }
+  const g = gcd(e, phi);
+  if (g !== 1n) { rsaAddStep('ERRORE', `MCD(e=${e}, φ(n)=${phi}) = ${g} ≠ 1. e non è valido.`, 'error'); return; }
+  rsaAddStep(`e = ${e} valido?`, `MCD(${e}, ${phi}) = ${g} → ✓ coprimo`, 'ok');
+
+  const d = modInverse(e, phi);
+  rsaAddStep('d = e⁻¹ mod φ(n)', `Euclide esteso → d = ${d}`);
+  rsaAddStep('Verifica: e × d mod φ(n)', `${e} × ${d} mod ${phi} = ${(e*d)%phi}  → ✓`);
+
+  rsaAddStep('🔑 CHIAVE PUBBLICA (e, n)', `(${e}, ${n})`);
+  rsaAddStep('🔐 CHIAVE PRIVATA (d, n)', `(${d}, ${n})`);
+
+  if (M >= n) { rsaAddStep('ERRORE', `M = ${M} deve essere < n = ${n}`, 'error'); return; }
+
+  const C = modPow(M, e, n);
+  rsaAddStep(`CIFRATURA: C = M^e mod n`, `${M}^${e} mod ${n} = ${C}`);
+
+  const Md = modPow(C, d, n);
+  rsaAddStep(`DECIFRATURA: M = C^d mod n`, `${C}^${d} mod ${n} = ${Md}`);
+
+  if (Md === M) rsaAddStep('✓ RISULTATO', `Decifratura corretta: M = ${Md}`, 'ok');
+  else rsaAddStep('✗ ERRORE', `Decifratura fallita: ottenuto ${Md} invece di ${M}`, 'error');
+}
+
+/* ════════════════════════════════
+   AI — Chiamata all'API Claude
+   Costruisco un prompt diverso per
+   ogni sezione. Lo stream SSE
+   viene letto chunk per chunk e
+   aggiunto in tempo reale alla UI.
+════════════════════════════════ */
+function getAIPrompt(section) {
+  const suffix = '\n\nRispondi in modo molto conciso: fai tutti i ragionamenti internamente, poi scrivi solo un breve riassunto del procedimento (massimo 150 parole) e il risultato finale.';
+  const prompts = {
+    atbash: () => {
+      const ct = document.getElementById('atbash-output').textContent;
+      return `Hai ricevuto questo testo cifrato e non sai con quale metodo è stato prodotto:\n\n"${ct}"\n\nProva a decifrarlo. Descrivi solo quello che hai fatto concretamente per arrivare alla soluzione e mostra il testo decifrato.` + suffix;
+    },
+    polybius: () => {
+      const ct = document.getElementById('polybius-output').textContent;
+      return `Hai ricevuto questo testo cifrato e non sai con quale metodo è stato prodotto:\n\n"${ct}"\n\nProva a decifrarlo. Descrivi solo quello che hai fatto concretamente per arrivare alla soluzione e mostra il testo decifrato.` + suffix;
+    },
+    caesar: () => {
+      const ct = document.getElementById('caesar-output').textContent;
+      return `Hai ricevuto questo testo cifrato e non sai con quale metodo è stato prodotto:\n\n"${ct}"\n\nProva a decifrarlo usando l'analisi delle frequenze. Descrivi solo quello che hai fatto concretamente e mostra il testo decifrato.` + suffix;
+    },
+    vigenere: () => {
+      const ct = document.getElementById('vigenere-output').textContent;
+      return `Hai ricevuto questo testo cifrato e non sai con quale metodo è stato prodotto:\n\n"${ct}"\n\nProva a decifrarlo. Descrivi solo quello che hai fatto concretamente per arrivare alla soluzione (o perché non è possibile se il testo è troppo corto) e mostra il risultato.` + suffix;
+    },
+    scytale: () => {
+      const ct = document.getElementById('scytale-output').textContent;
+      return `Hai intercettato questo testo cifrato con un metodo di trasposizione:\n\n"${ct}"\n\nNon conosci il numero di colonne usato. Prova a decifrarlo provando diversi valori di colonne. Descrivi concisamente il procedimento e mostra il testo decifrato più probabile.` + suffix;
+    },
+    rsa: () => {
+      const C = (() => {
+        for (const s of document.querySelectorAll('#rsa-steps .rsa-step')) {
+          if (s.querySelector('.step-label').textContent.includes('CIFRATURA')) {
+            const m = s.querySelector('.step-val').textContent.match(/=\s*(\d+)$/);
+            return m ? m[1] : '?';
+          }
+        }
+        return '?';
+      })();
+      const n = (() => {
+        for (const s of document.querySelectorAll('#rsa-steps .rsa-step')) {
+          if (s.querySelector('.step-label').textContent.includes('n = p')) {
+            const m = s.querySelector('.step-val').textContent.match(/=\s*(\d+)$/);
+            return m ? m[1] : '?';
+          }
+        }
+        return '?';
+      })();
+      return `Hai intercettato questo messaggio cifrato con RSA:\n\nTesto cifrato C = ${C}\nChiave pubblica n = ${n}\n\nNon conosci la chiave privata. Prova a fattorizzare n, ricava d e decifra il messaggio. Mostra i calcoli chiave e il risultato.` + suffix;
+    }
+  };
+  return prompts[section]();
+}
+
+const AI_HINT = {
+  atbash:   'Indizio: il testo è cifrato con il cifrario Atbash (ogni lettera è sostituita con quella speculare nell\'alfabeto: A↔Z, B↔Y...).',
+  polybius: 'Indizio: il testo è cifrato con la Scacchiera di Polibio (ogni lettera è codificata come coppia riga-colonna in una griglia 5×5).',
+  caesar:   'Indizio: il testo è cifrato con il Cifrario di Cesare (shift fisso di N posizioni nell\'alfabeto).',
+  vigenere: 'Indizio: il testo è cifrato con il Cifrario di Vigenère (shift variabile basato su una parola-chiave ripetuta).',
+  rsa:      'Indizio: il messaggio è cifrato con RSA. Conosci n e C. Prova a fattorizzare n per ricavare p e q, poi calcola φ(n), poi d = e⁻¹ mod φ(n), poi M = C^d mod n.',
+  scytale:  'Indizio: il testo è cifrato con la Scitale Spartana (trasposizione). Il messaggio originale viene scritto in una griglia di N colonne e riletto per colonne. Prova con diversi valori di N (tipicamente 2–10) e cerca il testo che ha senso in italiano.'
+};
+
+// Mantiene la cronologia messaggi per ogni sezione per il multi-turn
+const aiHistory = { atbash: null, polybius: null, caesar: null, vigenere: null, rsa: null, scytale: null };
+
+async function callAI(section, withHint = false) {
+  const boxId = `ai-${section}`;
+  const contentId = `ai-${section}-content`;
+  const box = document.getElementById(boxId);
+  const content = document.getElementById(contentId);
+
+  if (!withHint) {
+    // Prima chiamata: controlla che ci sia un output
+    const outputEl = document.getElementById(`${section}-output`);
+    if (outputEl) {
+      const txt = outputEl.textContent;
+      if (!txt || txt === '—' || txt === '') {
+        content.textContent = '⚠ Prima esegui una cifratura/decifratura.';
+        box.classList.add('visible');
+        return;
+      }
+    } else if (section === 'rsa' && document.getElementById('rsa-steps').children.length === 0) {
+      content.textContent = '⚠ Prima esegui il calcolo RSA.';
+      box.classList.add('visible');
+      return;
+    }
+    // Reset storia
+    aiHistory[section] = null;
+  }
+
+  box.classList.add('visible');
+
+  // Costruisce i messaggi: prima chiamata o con indizio (multi-turn)
+  let messages;
+  if (!withHint) {
+    messages = [{ role: 'user', content: getAIPrompt(section) }];
+  } else {
+    // Aggiungo la risposta precedente + il nuovo messaggio con l'indizio
+    messages = [
+      { role: 'user',      content: getAIPrompt(section) },
+      { role: 'assistant', content: aiHistory[section] },
+      { role: 'user',      content: AI_HINT[section] + '\n\nRiprova ora con questo indizio. Stessa istruzione di prima: riassunto conciso (max 150 parole) e risultato finale.' }
+    ];
+    content.textContent += '\n\n─── INDIZIO FORNITO ───\n⟳ Nuovo tentativo in corso...';
+  }
+
+  if (!withHint) content.textContent = '⟳ Analisi in corso...';
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 400,
+        messages
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      content.textContent = `❌ Errore API: ${err.error?.message || response.status}`;
+      return;
+    }
+
+    const data = await response.json();
+    const text = data.content?.find(b => b.type === 'text')?.text || '(nessuna risposta)';
+
+    // Salva la risposta per eventuale multi-turn successivo
+    aiHistory[section] = text;
+
+    const header = box.querySelector('.ai-header');
+
+    if (!withHint) {
+      content.textContent = text;
+    } else {
+      // Sostituisce l'ultima riga "in corso..." con il risultato
+      content.textContent = content.textContent.replace('⟳ Nuovo tentativo in corso...', text);
+    }
+
+    // Mostra il pulsante indizio solo se non era già stato usato
+    const existingHintBtn = box.querySelector('.btn-hint');
+    if (!withHint && !existingHintBtn) {
+      const hintBtn = document.createElement('button');
+      hintBtn.className = 'btn btn-ai btn-hint';
+      hintBtn.style.marginTop = '0.8rem';
+      hintBtn.style.fontSize = '0.62rem';
+      hintBtn.textContent = '💡 Dai un indizio al tipo di cifratura';
+      hintBtn.onclick = () => { hintBtn.remove(); callAI(section, true); };
+      box.appendChild(hintBtn);
+      header.innerHTML = '✓ ANALISI COMPLETATA';
+    } else {
+      header.innerHTML = '✓ ANALISI COMPLETATA (con indizio)';
+    }
+
+  } catch (err) {
+    content.textContent = `❌ Errore di rete: ${err.message}`;
+  }
+}
+</script>
+</body>
+</html>
